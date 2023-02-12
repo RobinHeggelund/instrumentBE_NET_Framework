@@ -6,11 +6,7 @@ using System.Threading.Tasks;
 using System.IO.Ports;
 using System.Net.Sockets;
 using System.Net;
-
-
-
-
-
+using System.IO;
 
 namespace instrumentBE_NET_Framework
 {
@@ -23,7 +19,6 @@ namespace instrumentBE_NET_Framework
             bool background = false;
 
             //TCP Server start
-
 
             // make an endpoint for communication:
 
@@ -49,29 +44,34 @@ namespace instrumentBE_NET_Framework
                 Console.WriteLine("Client connected.");
 
                 //data received
+                
                 byte[] buffer = new byte[1024];
                 int bytesReceived = client.Receive(buffer);
 
-                string commandReceived = Encoding.ASCII.GetString(buffer, 0, bytesReceived);
-                Console.WriteLine("Received: " + commandReceived);
+                string commandReceivedFE = Encoding.ASCII.GetString(buffer, 0, bytesReceived);
+                Console.WriteLine("Received: " + commandReceivedFE);
 
-                string commandResponse = SerialCommand("COM3", commandReceived);
+                
+
+                string serialResponse = SerialCommand("COM3", commandReceivedFE);
 
                 // log data received
 
-                if (logging == true && commandReceived != "EMPTY")
+                if (logging)
                 {
                     using (StreamWriter writer = new StreamWriter("log.txt", true))
                     {
-                        writer.WriteLine("[" + DateTime.Now + "] " + "Received:" + commandReceived);
+                        writer.WriteLine("[" + DateTime.Now + "] " + "Received:" + commandReceivedFE);
                     }
                 }
 
                 // return received data to server
 
-                if (commandReceived != "")
+                
+
+                if (commandReceivedFE != "")
                 {
-                    client.Send(Encoding.ASCII.GetBytes(commandResponse));
+                    client.Send(Encoding.ASCII.GetBytes(serialResponse));
                 }
 
                 else
@@ -138,15 +138,17 @@ namespace instrumentBE_NET_Framework
             SerialPort serialPort = new SerialPort(portName, baudRate);
             serialPort.Open();
             Console.WriteLine("Connected to arduino. Write close to disconnect");
-            serialPort.WriteLine("readscaled");
+            serialPort.WriteLine(command);
             string serialResponse = serialPort.ReadLine();
 
             Console.WriteLine(serialResponse);
-            Console.ReadKey();
+           
             serialPort.Close();
 
             return serialResponse;
 
         }
+        
+        
     }
 }
