@@ -8,6 +8,8 @@ using System.Net.Sockets;
 using System.Net;
 using System.IO;
 
+// writeconf>password>CJS134DK82;0,0;450,0;30;420
+
 namespace instrumentBE_NET_Framework
 {
     internal class Program
