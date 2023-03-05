@@ -8,6 +8,8 @@ using System.Net.Sockets;
 using System.Net;
 using System.IO;
 
+//example: writeconf>password>arduinoSensor;0.0;400.0;35;350
+
 namespace instrumentBE_NET_Framework
 {
     internal class Program
@@ -136,7 +138,32 @@ namespace instrumentBE_NET_Framework
         {
             int baudRate = 9600;
             SerialPort serialPort = new SerialPort(portName, baudRate);
-            serialPort.Open();
+
+            try
+            {
+                serialPort.Open();
+
+            }
+            catch (IOException e)
+            {
+                
+                Console.WriteLine("No connection found on USB port");
+                serialPort.Close();
+                return "No connection found on USB port";
+
+            }
+
+            catch (UnauthorizedAccessException e)
+            {
+
+                Console.WriteLine("Unauthorized Access to USB port");
+                serialPort.Close();
+                return "No connection found on USB port";
+
+            }
+
+
+
             Console.WriteLine("Connected to arduino. Write close to disconnect");
             serialPort.WriteLine(command);
             string serialResponse = serialPort.ReadLine();
