@@ -17,14 +17,57 @@ namespace instrumentBE_NET_Framework
         static void Main(string[] args)
 
         {
+
             bool logging = false;
+            int com = 3;
             bool background = false;
+            int port = 5000;
 
-            //TCP Server start
+            // Check for command line arguments
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i].Equals("-logging"))
+                {
+                    if (i + 1 < args.Length && bool.TryParse(args[i + 1], out bool result))
+                    {
+                        logging = result;
+                    }
+                }
+                else if (args[i].Equals("-com"))
+                {
+                    if (i + 1 < args.Length && int.TryParse(args[i + 1], out int result))
+                    {
+                        com = result;
+                    }
+                }
+                else if (args[i].Equals("-background"))
+                {
+                    if (i + 1 < args.Length && bool.TryParse(args[i + 1], out bool result))
+                    {
+                        background = result;
+                    }
+                }
+                else if (args[i].Equals("-port"))
+                {
+                    if (i + 1 < args.Length && int.TryParse(args[i + 1], out int result))
+                    {
+                        port = result;
+                    }
+                }
+            
 
-            // make an endpoint for communication:
+            // Output the values
+            Console.WriteLine($"Logging: {logging}");
+            Console.WriteLine($"COM: {com}");
+            Console.WriteLine($"Background: {background}");
+            Console.WriteLine($"Port: {port}");
+        }
 
-            IPEndPoint endpoint = new IPEndPoint(IPAddress.Any, 5000);
+        //TCP Server start
+
+        // make an endpoint for communication:
+
+        IPEndPoint endpoint = new IPEndPoint(IPAddress.Any, 5000);
             Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
             //bind to endpoint and start server
@@ -53,9 +96,12 @@ namespace instrumentBE_NET_Framework
                 string commandReceivedFE = Encoding.ASCII.GetString(buffer, 0, bytesReceived);
                 Console.WriteLine("Received: " + commandReceivedFE);
 
-                
+                // choose userinput for COM port
 
-                string serialResponse = SerialCommand("COM3", commandReceivedFE);
+                string COMstring = "COM" + com;
+
+                string serialResponse = SerialCommand(COMstring, commandReceivedFE);
+
 
                 // log data received
 
@@ -68,6 +114,7 @@ namespace instrumentBE_NET_Framework
                 }
 
                 // return received data to server
+
 
                 
 
