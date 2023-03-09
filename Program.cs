@@ -339,19 +339,19 @@ namespace instrumentBE_NET_Framework
                 Console.WriteLine("Received: " + commandReceivedFE);
 
                 // choose userinput for COM port
-
+                
                 string COMstring = "COM" + com;
 
-                string serialResponse = SerialCommand(COMstring, commandReceivedFE);
+                string serialResponse = SerialCommand(COMstring, commandReceivedFE, logging);
 
 
                 // log data received
 
                 if (logging)
                 {
-                    using (StreamWriter writer = new StreamWriter("log.txt", true))
+                    using (StreamWriter writer = new StreamWriter(Environment.CurrentDirectory+"\\log.txt", true))
                     {
-                        writer.WriteLine("[" + DateTime.Now + "] " + "Received:" + commandReceivedFE);
+                        writer.WriteLine("[" + DateTime.Now + "] " + "From FE:" + commandReceivedFE);
                     }
                 }
 
@@ -379,59 +379,9 @@ namespace instrumentBE_NET_Framework
                 }
             }
 
-
-
-
-            // define port 
-
-            
-
-
-
-
-
-            /*
-
-            while (serialPort.IsOpen ) 
-            
-            {
-                // get user input
-
-                Console.WriteLine("Enter message:");
-
-                string serialMessage = Console.ReadLine();
-
-                // send user input to arduino
-
-                serialPort.WriteLine(serialMessage);
-
-                // get response
-
-                Console.WriteLine("Message sendt. Waiting for response");
-                string serialResponse = serialPort.ReadLine();
-
-                Console.WriteLine("Arduino response: " + serialResponse);
-
-                // flush memory
-
-                serialPort.DiscardInBuffer();
-                serialPort.DiscardOutBuffer();
-                
-
-
-                // close port
-
-                if (serialMessage == "close")
-                {
-                    serialPort.Close();
-                }
-
-
-            }
-            */
         }
 
-        static string SerialCommand(string portName, string command)
+        static string SerialCommand(string portName, string command, bool logging)
         {
             int baudRate = 9600;
             SerialPort serialPort = new SerialPort(portName, baudRate);
@@ -461,15 +411,35 @@ namespace instrumentBE_NET_Framework
 
 
 
-            Console.WriteLine("Connected to arduino. Write close to disconnect");
+            Console.WriteLine("Command sendt to instrument: " + command );
             serialPort.WriteLine(command);
-            string serialResponse = serialPort.ReadLine();
+            try
+            {
+                string serialResponse = serialPort.ReadLine();
 
-            Console.WriteLine(serialResponse);
-           
-            serialPort.Close();
+                Console.WriteLine("Command recieved from instrument: " + serialResponse);
 
-            return serialResponse;
+                if (logging)
+                {
+                    using (StreamWriter writer = new StreamWriter(Environment.CurrentDirectory + "\\log.txt", true))
+                    {
+                        writer.WriteLine("[" + DateTime.Now + "] " + "From Instrument:" + serialResponse);
+                    }
+                }
+
+                serialPort.Close();
+
+                return serialResponse;
+            }
+            catch (System.Net.Sockets.SocketException ex)
+
+            {
+                Console.WriteLine("No response from instrument");
+                serialPort.Close();
+                return "No response from instrument";
+            }
+
+            
 
         }
         
