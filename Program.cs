@@ -15,6 +15,8 @@ namespace instrumentBE_NET_Framework
 {
     internal class Program
     {
+        // Hide console window
+        
         [DllImport("user32.dll")]
         private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
@@ -27,10 +29,11 @@ namespace instrumentBE_NET_Framework
             // Arguments
 
             bool logging = false;
-            int com = 3;
             bool background = false;
-            int port = 5000;
+            int TCPPort = 5000;
+            IPAddress databaseIP = null;
             bool skipSetup = false;
+            bool autoConfigure = false;
 
             // Setup Variables
 
@@ -48,14 +51,7 @@ namespace instrumentBE_NET_Framework
                         settingsUpdatedInArgs = true;
                     }
                 }
-                else if (args[i].Equals("-com"))
-                {
-                    if (i + 1 < args.Length && int.TryParse(args[i + 1], out int result))
-                    {
-                        com = result;
-                        settingsUpdatedInArgs = true;
-                    }
-                }
+
                 else if (args[i].Equals("-background"))
                 {
                     if (i + 1 < args.Length && bool.TryParse(args[i + 1], out bool result))
@@ -65,24 +61,41 @@ namespace instrumentBE_NET_Framework
                         settingsUpdatedInArgs = true;
                     }
                 }
-                else if (args[i].Equals("-port"))
+                else if (args[i].Equals("-TCPPort"))
                 {
                     if (i + 1 < args.Length && int.TryParse(args[i + 1], out int result))
                     {
-                        port = result;
+                        TCPPort = result;
                         settingsUpdatedInArgs = true;
-                    }
+                    }  
                 }
                 else if (args[i].Equals("-skipSetup"))
                 {
                     if (i + 1 < args.Length && bool.TryParse(args[i + 1], out bool result))
                     {
                         skipSetup = result;
-                        
+
+                    }
+                }
+
+                else if (args[i].Equals("-autoConfigure"))
+                {
+                    if (i + 1 < args.Length && bool.TryParse(args[i + 1], out bool result))
+                    {
+                        autoConfigure = result;
+
+                    }
+                }
+
+                else if (args[i].Equals("-IP"))
+                {
+                    if (i + 1 < args.Length && IPAddress.TryParse(args[i + 1], out IPAddress result))
+                    {
+                        databaseIP = result;
+                        settingsUpdatedInArgs = true;
                     }
                 }
             }
-
             // Feedback on commandline arguments used
 
             if (settingsUpdatedInArgs == true)
@@ -113,12 +126,14 @@ namespace instrumentBE_NET_Framework
 
             // Give user feedback on settings
 
-            Console.WriteLine("\r\n"+"------ Settings -------");
-            Console.WriteLine("Logging: " + logging);
-            Console.WriteLine("Running in background?: " + background);
-            Console.WriteLine("COM port: " + com);
-            Console.WriteLine("Port: " + port);
-            Console.WriteLine("-----------------------");
+            Console.WriteLine("\r\n"+"------------------ Settings -------------------");
+            Console.WriteLine("Logging?                  -logging       " + logging);
+            Console.WriteLine("Running in background?    -background    " + background);
+            Console.WriteLine("Database IP:              -IP            " + databaseIP);
+            Console.WriteLine("TCP Port                  -TCPPort       " + TCPPort);
+            Console.WriteLine("Skip Setup?               -skipSetup     " + skipSetup);
+            Console.WriteLine("Auto Configure?           -autoConfigure " + autoConfigure);
+            Console.WriteLine("-----------------------------------------------");
 
             // Ask if user want to change settings
 
@@ -151,7 +166,7 @@ namespace instrumentBE_NET_Framework
             {
                 // Select what settings to change
 
-                Console.WriteLine("Which settings do you want to change? 1: Logging, 2: Background, 3: COM port, 4: Port");
+                Console.WriteLine("Which settings do you want to change? 1: Logging, 2: Background, 3: Database IP, 4: TCP-Port, 5: Auto Configure");
                 string userSettingsToChange = Console.ReadLine();
                
                 // Change logging settings
@@ -204,35 +219,36 @@ namespace instrumentBE_NET_Framework
                     }
                 }
 
-                // Change COM port settings
-
+                // Change database IP
 
                 else if (userSettingsToChange == "3")
                 {
 
-                    bool userChangeComSettings = true;
+                    bool userChangePortSettings = true;
 
-                    while (userChangeComSettings)
+                    while (userChangePortSettings)
                     {
-                        Console.WriteLine("Which COM port do you want to use?");
-                        string userCom = Console.ReadLine();
+                        Console.WriteLine("Which IP do you want to use?");
+                        string userIP = Console.ReadLine();
 
                         try
                         {
-                            int userComInt = int.Parse(userCom);
-                            com = userComInt;
-                            Console.WriteLine("COM port changed to " + com + "!");
-                            userChangeComSettings = false;
+                            IPAddress userIPConvert = IPAddress.Parse(userIP);
+                            databaseIP = userIPConvert;
+                            Console.WriteLine("database IP changed to " + databaseIP + "!");
+                            userChangePortSettings = false;
                         }
                         catch (FormatException e)
                         {
-                           
-                            Console.WriteLine("Invalid input. Please enter an integer value for the COM port.");
+
+                            Console.WriteLine("Invalid input. Please enter an IP address.");
                         }
                     }
                 }
 
-                // Change port settings
+
+
+                // Change TCP port settings
 
                 else if (userSettingsToChange == "4")
                 {
@@ -247,15 +263,41 @@ namespace instrumentBE_NET_Framework
                         try
                         {
                             int userPortInt = int.Parse(userPort);
-                            port = userPortInt;
-                            Console.WriteLine("Port changed to " + port + "!");
+                            TCPPort = userPortInt;
+                            Console.WriteLine("TCP Port changed to " + TCPPort + "!");
                             userChangePortSettings = false;
                         }
                         catch (FormatException e)
                         {
 
-                            Console.WriteLine("Invalid input. Please enter an integer value for the Port.");
+                            Console.WriteLine("Invalid input. Please enter an integer value for the TCP Port.");
                         }
+                    }
+                }
+
+                // Change auto configure settings
+
+                else if (userSettingsToChange == "5")
+                {
+
+                    Console.WriteLine("Do you want program to auto configure instrument with default settings? Y/N");
+                    string userAutoConfigure = Console.ReadLine();
+
+                    if (userAutoConfigure == "Y" || userAutoConfigure == "y")
+                    {
+                        autoConfigure = true;
+                        Console.WriteLine("Auto configure enabled");
+                    }
+
+                    else if (userAutoConfigure == "N" || userAutoConfigure == "n")
+                    {
+                        autoConfigure = false;
+                        Console.WriteLine("Auto configure disabled");
+                    }
+
+                    else
+                    {
+                        Console.WriteLine("Invalid input. Settings not changed.");
                     }
                 }
 
@@ -273,14 +315,17 @@ namespace instrumentBE_NET_Framework
 
                 if (userSeeUpdatedSettings == "Y" || userSeeUpdatedSettings == "y")
                 {
-                 
 
-                    Console.WriteLine("\r\n" + "------ Settings -------");
-                    Console.WriteLine("Logging: " + logging);
-                    Console.WriteLine("Running in background?: " + background);
-                    Console.WriteLine("COM port: " + com);
-                    Console.WriteLine("Port: " + port);
-                    Console.WriteLine("-----------------------");
+                    // Give user feedback on settings
+
+                    Console.WriteLine("\r\n" + "------------------ Settings -------------------");
+                    Console.WriteLine("Logging?                  -logging       " + logging);
+                    Console.WriteLine("Running in background?    -background    " + background);
+                    Console.WriteLine("Database IP:              -IP            " + databaseIP);
+                    Console.WriteLine("TCP Port                  -TCPPort       " + TCPPort);
+                    Console.WriteLine("Skip Setup?               -skipSetup     " + skipSetup);
+                    Console.WriteLine("Auto Configure?           -autoConfigure " + autoConfigure);
+                    Console.WriteLine("-----------------------------------------------");
                 }
 
                 // Ask if user wants to change more settings
@@ -292,13 +337,20 @@ namespace instrumentBE_NET_Framework
                 {
                     userSetup = true;
                 }
-                else
+                else if (userChangeMoreSettings == "N" || userChangeMoreSettings == "n")
                 {
                     userSetup = false;
                 }
+
+                else
+                {
+                    userSetup = true;
+                }
+                
             }
 
             // If background is true, hide the console window
+            
             if (background)
             {
                 var handle = GetConsoleWindow();
@@ -314,12 +366,48 @@ namespace instrumentBE_NET_Framework
 
             //bind to endpoint and start server
 
-            server.Bind(endpoint);
-            server.Listen(10);
+            try
+            {
+                server.Bind(endpoint);
+                server.Listen(10);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error trying to Bind to endpoint. Another instance of instrumentBE running?");
+            }
 
-            //output info
 
-            Console.WriteLine("Server started. Waiting for connection..");
+            if (autoConfigure)
+            {
+
+                //Write default config and get response from instrument
+
+                string serialFirstResponse = SerialCommand("COM3", "writeconf>password>arduinoSensor;0.0;400.0;35;350", logging, 9600);
+
+                string[] serialFirstResponseArray = serialFirstResponse.Split(';');
+
+                if (serialFirstResponseArray[0] == "writeconf")
+                {
+                    int configured = int.Parse(serialFirstResponseArray[1]);
+
+                    if (configured == 1)
+                    {
+                        Console.WriteLine("\r\nConnection with instrument established");
+                    }
+                    else
+                    {
+                        Console.WriteLine("\r\nError: Connected to instrument but could not configure");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("\r\nError: Could not connect to instrument");
+                }
+
+            }
+
+
+            Console.WriteLine("Server open. Waiting for connection from FE..");
 
             // Keep Connection Open
 
@@ -338,11 +426,66 @@ namespace instrumentBE_NET_Framework
                 string commandReceivedFE = Encoding.ASCII.GetString(buffer, 0, bytesReceived);
                 Console.WriteLine("Received: " + commandReceivedFE);
 
-                // choose userinput for COM port
-                
-                string COMstring = "COM" + com;
+                if (commandReceivedFE != "ping")
+                {
+                    // Split command
 
-                string serialResponse = SerialCommand(COMstring, commandReceivedFE, logging);
+                    string[] commandRecievedFESplit = commandReceivedFE.Split(',');
+
+                    // Convert command
+
+                    string commandRecievedFEcommand = commandRecievedFESplit[0];
+                    string commandReceivedFECOM = "COM"+commandRecievedFESplit[1];
+                    int commandReceivedFEbaudRate = int.Parse(commandRecievedFESplit[2]);
+
+
+                    // Get response from instrument and send to FE
+
+                    string serialResponse = SerialCommand(commandReceivedFECOM, commandRecievedFEcommand, logging, commandReceivedFEbaudRate);
+
+                    // Return error
+
+                    if (serialResponse == "No connection found on USB port")
+
+                    { try
+                        {
+                            client.Send(Encoding.ASCII.GetBytes("error;USB"));
+                        }
+
+                    catch (Exception e)
+                        {
+                            Console.WriteLine("Error sending data to FE");
+                        }
+                    }
+                    
+                    // Return Response
+
+                    try
+                    {
+                        client.Send(Encoding.ASCII.GetBytes(serialResponse));
+                    }
+
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Error sending data to FE");
+                    }
+
+                    // log to file
+
+                    if (logging)
+                    {
+                        using (StreamWriter writer = new StreamWriter(Environment.CurrentDirectory + "\\log.txt", true))
+                        {
+                            writer.WriteLine("[" + DateTime.Now + "] " + "From FE:" + commandReceivedFE);
+                        }
+                    }
+                }
+
+                else if (commandReceivedFE == "ping")
+                {
+                    client.Send(Encoding.ASCII.GetBytes("ping"));
+                }
+
 
 
                 // log data received
@@ -354,37 +497,18 @@ namespace instrumentBE_NET_Framework
                         writer.WriteLine("[" + DateTime.Now + "] " + "From FE:" + commandReceivedFE);
                     }
                 }
-
-                // return received data to server
-
-
-                if (commandReceivedFE != "")
-                {
-                    try 
-                    {
-                        client.Send(Encoding.ASCII.GetBytes(serialResponse));
-                    }
-
-
-
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.ToString());
-                    }
-                }
-
-                else
-                {
-                    client.Send(Encoding.ASCII.GetBytes("Empty message recieved"));
-                }
+                
             }
 
         }
 
-        static string SerialCommand(string portName, string command, bool logging)
+        // Send command to instrument
+
+        static string SerialCommand(string portName, string command, bool logging, int baudRate)
         {
-            int baudRate = 9600;
+            
             SerialPort serialPort = new SerialPort(portName, baudRate);
+            
 
             try
             {
@@ -396,8 +520,9 @@ namespace instrumentBE_NET_Framework
                 
                 Console.WriteLine("No connection found on USB port");
                 serialPort.Close();
-                return "No connection found on USB port";
 
+
+                return "No connection found on USB port";
             }
 
             catch (UnauthorizedAccessException e)
@@ -405,31 +530,31 @@ namespace instrumentBE_NET_Framework
 
                 Console.WriteLine("Unauthorized Access to USB port");
                 serialPort.Close();
+
                 return "No connection found on USB port";
 
             }
-
-
 
             Console.WriteLine("Command sendt to instrument: " + command );
             serialPort.WriteLine(command);
             try
             {
-                string serialResponse = serialPort.ReadLine();
+                
+                string serialResponseInternal = serialPort.ReadLine();
 
-                Console.WriteLine("Command recieved from instrument: " + serialResponse);
+                Console.WriteLine("Command recieved from instrument: " + serialResponseInternal);
 
                 if (logging)
                 {
                     using (StreamWriter writer = new StreamWriter(Environment.CurrentDirectory + "\\log.txt", true))
                     {
-                        writer.WriteLine("[" + DateTime.Now + "] " + "From Instrument:" + serialResponse);
+                        writer.WriteLine("[" + DateTime.Now + "] " + "From Instrument:" + serialResponseInternal);
                     }
                 }
 
                 serialPort.Close();
 
-                return serialResponse;
+                return serialResponseInternal;
             }
             catch (System.Net.Sockets.SocketException ex)
 
