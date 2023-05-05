@@ -8,6 +8,11 @@ using System.IO.Ports;
 using System.Net.Sockets;
 using System.Net;
 using System.IO;
+using System.Threading;
+using Microsoft.Data.SqlClient;
+using System.Data.SqlClient;
+using System.Globalization;
+using System.Configuration;
 
 //example: writeconf>password>arduinoSensor;0.0;400.0;35;350
 
@@ -25,6 +30,25 @@ namespace instrumentBE_NET_Framework
 
         static void Main(string[] args)
         {
+
+            // Connection string
+
+            string connectionString = "Data Source=127.0.0.1,1432;Initial Catalog=instrumentDataValuesSYS;User ID=sa;Encrypt = False;";
+
+
+
+
+
+
+            //instrumentID save/load
+
+            //instrumentConfReader = new StreamReader(fileNameInstrumentConfig);
+            //instrumentID = instrumentConfReader.ReadLine();
+            //Console.WriteLine("Instrument ID Configured" + instrumentID);
+            //instrumentConfReader.Close();
+
+               
+
 
             // Arguments
 
@@ -349,6 +373,8 @@ namespace instrumentBE_NET_Framework
                 
             }
 
+
+
             // If background is true, hide the console window
             
             if (background)
@@ -407,12 +433,28 @@ namespace instrumentBE_NET_Framework
             }
 
 
+
             Console.WriteLine("Server open. Waiting for connection from FE..");
 
             // Keep Connection Open
 
+            // Threading
+
+            Thread thread = new Thread(Measurement);
+
+            
+
+
+            thread.Start();
+
             while (true)
             {
+
+                // Collect data from instrument
+
+                // Send to instrumentDataDB
+
+                Console.WriteLine(SerialCommand("COM3", "readscaled",false,9600));
                 //accept connection
 
                 Socket client = server.Accept();
@@ -502,7 +544,101 @@ namespace instrumentBE_NET_Framework
 
         }
 
+        static void testConnectionToDatabase()
+        {
+            // Create a connection string containing database IP, database TCP port, Username and Password
+
+            string connectionString = "Data Source=127.0.0.1,1432;Initial Catalog=instrumentDataValuesSYS;User ID=sa;Password=S3cur3P@ssW0rd!;Encrypt = False;";
+
+            // Create SqlConnection based on the connection string
+
+            Microsoft.Data.SqlClient.SqlConnection sqlConnectionTest = new Microsoft.Data.SqlClient.SqlConnection(connectionString);
+
+            // Try to open connection for 10 seconds
+
+            int connectionTimer = 0;
+            bool connectionFound = false;
+
+            while (connectionTimer > 10 || connectionFound != true)
+                {
+
+                Console.WriteLine("Checking connection to database..");
+
+
+                    sqlConnectionTest.Open();
+
+
+        }
+
+
         // Send command to instrument
+
+        static void Measurement()
+
+            // arguments: databaseIP, TCP, Username, Password, COM, Baudrate, logging, InstrumentName
+        {
+            // Create a connection string containing database IP, database TCP port, Username and Password
+
+            string connectionString = "Data Source=127.0.0.1,1432;Initial Catalog=instrumentDataValuesSYS;User ID=sa;Password=S3cur3P@ssW0rd!;Encrypt = False;";
+
+            // Defining instrumentName
+
+            string instrumentName = "InstrumentTest1";
+
+            // Create SqlConnection based on the connection string
+
+            Microsoft.Data.SqlClient.SqlConnection sqlConnection = new Microsoft.Data.SqlClient.SqlConnection(connectionString);
+
+            // Create sql insert string with parameteres
+
+            string sqlinsertMeasurement = "INSERT INTO InstrumentDataValuesSet (InstrumentName, Timestamp, Value)" +
+                                               "VALUES (@InstrumentName, @Timestamp, @Value)";
+
+            // Once database info and instrument name are defined, start retrieving data from instrument and send it to database
+
+            while (true)
+            {
+                // Send serial command to instrument, containing COM number, logging and baudrate
+
+                Console.WriteLine(SerialCommand("COM3", "readscaled", false, 9600));
+                string serialResponse = SerialCommand("COM3", "readscaled", false, 9600);
+
+                // Only send data to DB if connection is found to instrument
+
+                if (serialResponse != "No connection found on USB port")
+
+                    {
+
+                    // extract and convert the readscaled value from serial response
+
+                    string splitResponse = serialResponse.Split(';')[1];
+                    splitResponse = splitResponse.Substring(0, splitResponse.Length - 2);
+
+                    double measurement = Convert.ToDouble(splitResponse, CultureInfo.InvariantCulture);
+                    Console.WriteLine("splitResponse: "+splitResponse);
+
+                    // Open connection to sql database
+
+                    sqlConnection.Open();
+
+                    // Send the actual data to the database
+
+                    Microsoft.Data.SqlClient.SqlCommand command = new Microsoft.Data.SqlClient.SqlCommand(sqlinsertMeasurement, sqlConnection);
+
+                    command.Parameters.AddWithValue("@InstrumentName", instrumentName);
+                    command.Parameters.AddWithValue("@Timestamp", DateTime.Now);
+                    command.Parameters.AddWithValue("@Value", measurement);
+
+                    command.ExecuteNonQuery();
+
+                    //Close connection to database again
+
+                    sqlConnection.Close();
+                }
+               
+                Thread.Sleep(1000);
+            }
+        }
 
         static string SerialCommand(string portName, string command, bool logging, int baudRate)
         {
